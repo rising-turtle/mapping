@@ -27,6 +27,9 @@ target_link_libraries(pub_pcd ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 add_executable(pcd_filter pcd_filter.cpp)
 target_link_libraries(pcd_filter ${PCL_LIBRARIES})
 
+add_executable(mapping_bag_ply mapping_bag_ply.cpp)
+target_link_libraries(mapping_bag_ply ${catkin_LIBRARIES} ${OpenCV_LIBS})
+
 ################## generate 3d map incrementally for recording ##############
 # add_executable(map_video map_video.cpp)
 # target_link_libraries(map_video gtsam_graph vro sr4k_io ${OpenCV_LIBS})

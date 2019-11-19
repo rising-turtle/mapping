@@ -8,6 +8,8 @@ project(mapping)
 find_package(catkin REQUIRED COMPONENTS
   roscpp 
   tf
+  rosbag
+  cv_bridge
   )
 
 ## System dependencies are found with CMake's conventions
@@ -19,7 +21,8 @@ catkin_package(
 
 set(CMAKE_CXX_FLAGS "-ggdb -g -O3 -w -std=c++11 -fpermissive") # -fPIC -fpermissive
 include_directories(/usr/include ${catkin_INCLUDE_DIRS})  
-include_directories("../cam_model/src")
+include_directories(/user/include/eigen3)
+# include_directories("../cam_model/src")
 # include_directories("../plane/src")
 
 ################ PCL #################
