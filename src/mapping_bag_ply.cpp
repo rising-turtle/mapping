@@ -61,14 +61,26 @@ int main(int argc, char* argv[])
   ros::NodeHandle n; 
   // euler_pub = n.advertise<std_msgs::Float32MultiArray>("/euler_msg", 10); \
 
+  cout<<"usage: ./mapping_bag_ply [traj] [bag] [out_ply]"<<endl; 
+
   // parameters 
   ros::NodeHandle np("~"); 
-  int skip = 2; 
+  int skip = 4; 
   int t_skip = 1; 
   string trajFile("/home/hzhang8/work/result/room8.csv");  // the trajectory log file 
   string bagFile("/home/hzhang8/work/data/sturct_core_v2/room8.bag");    // images dir 
   string outPLY("/home/hzhang8/work/result/room8.ply");    // the output PLY file 
   
+
+  if(argc >= 2){
+    trajFile = string(argv[1]); 
+    if(argc >= 3){
+      bagFile = string(argv[2]); 
+      if(argc >= 4)
+        outPLY = string(argv[3]);
+    }
+  }
+
   int su, sv, eu, ev ; 
 
   np.param("trajectory_file", trajFile, trajFile); 
@@ -94,22 +106,36 @@ int main(int argc, char* argv[])
   return 0; 
 }
 
-void handle_rgbd(cv::Mat& rgb, cv::Mat& dpt, vector<float>& pts_loc, vector<unsigned char>& pts_col, int skip, int* rect ){
+void handle_rgbd(cv::Mat& rgb, cv::Mat& dpt, trajItem& pj, vector<float>& pts_loc, vector<unsigned char>& pts_col, int skip, int* rect ){
+
+    static int nxt = 0; 
+    if(nxt++ & 0x01)
+      return; 
 
     vector<float> p_loc; // location 
     vector<unsigned char> p_col; // color 
 
     generatePointCloud(rgb, dpt, skip, p_loc, p_col, rect); 
 
+    Eigen::Quaternionf q(pj.qw, pj.qx, pj.qy, pj.qz); 
+
+    Eigen::Matrix4f Tg2u = Eigen::Matrix4f::Identity(); 
+    Tg2u.block<3,3>(0,0) = q.toRotationMatrix(); 
+    Tg2u(0,3) = pj.px; Tg2u(1,3) = pj.py; Tg2u(2,3) = pj.pz; 
+
     // transform into global 
-    Eigen::Vector4f fo, to; 
+    Eigen::Vector4f fo, u_fo, to; 
     for(int i=0; i<p_loc.size(); i+=3)
     {
       fo << p_loc[i], p_loc[i+1], p_loc[i+2], 1.0; 
       // to << p_loc[i], p_loc[i+1], p_loc[i+2]; 
       // to_imu = Tu2c.transform_from(fo);
       // to = p.transform_from(fo); 
-      to = Tu2c * fo; 
+      u_fo = Tu2c * fo;
+
+      // from imu to global 
+      to = Tg2u * u_fo; 
+
       p_loc[i] = to(0); p_loc[i+1] = to(1); p_loc[i+2] = to(2); 
     }
     
@@ -194,13 +220,13 @@ void processBagFile(string bagfile, vector<trajItem>& v_traj, vector<float>& pts
         rgb_ready = true; 
         if(dpt_ready){
           // handle it 
-          handle_rgbd(rgb_mat, dpt_mat, pts_loc, pts_col,skip, rect); 
+          handle_rgbd(rgb_mat, dpt_mat, (*it), pts_loc, pts_col,skip, rect); 
 
           dpt_ready = false; 
           rgb_ready = false; 
         }
-        if(++n_cnt < 50)
-          printf("mapping_bag_ply.cpp: receive rgb image at %ld \n", timestamp); 
+        // if(++n_cnt < 50)
+        //  printf("mapping_bag_ply.cpp: receive rgb image at %ld \n", timestamp); 
       }
 
   
@@ -220,7 +246,7 @@ void processBagFile(string bagfile, vector<trajItem>& v_traj, vector<float>& pts
         dpt_ready = true; 
         if(rgb_ready){
           // handle it 
-          handle_rgbd(rgb_mat, dpt_mat, pts_loc, pts_col,skip, rect); 
+          handle_rgbd(rgb_mat, dpt_mat, (*it), pts_loc, pts_col,skip, rect); 
 
           dpt_ready = false; 
           rgb_ready = false; 
@@ -501,7 +527,7 @@ void generatePointCloud(cv::Mat& rgb, cv::Mat& depth, int skip, vector<float>& p
   }
   
   int color_idx; 
-  char red_idx = 2, green_idx =1, blue_idx = 0;
+  char red_idx = 0, green_idx =1, blue_idx = 2;
 
   int sv, su, ev, eu; 
   if(rect == 0)
@@ -519,7 +545,7 @@ void generatePointCloud(cv::Mat& rgb, cv::Mat& depth, int skip, vector<float>& p
   for(int u = su; u<eu; u+=skip)
   {
     z = depth.at<unsigned short>((v), (u))*0.001;
-    if(std::isnan(z) || z <= 0.0) continue; 
+    if(std::isnan(z) || z <= 0.0 || z >= 4.0) continue; 
     // m_cam_model.convertUVZ2XYZ(u, v, z, px, py, pz); 
     px = (u - CX) / FX * z; 
     py = (v - CY) / FY * z; 
