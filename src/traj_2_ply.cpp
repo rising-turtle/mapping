@@ -76,11 +76,12 @@ bool mapPLY(std::string f, std::string outPLY)
   // vector<float> pts_loc(v_traj.size()*3);
   headerPLY(ouf, v_traj.size()); 
 
+  // TODO: make the color as an input parameter 
   for(int i=0; i<v_traj.size(); i++){
     // pts_loc[i*3] = v_traj[i].px; 
     // pts_loc[i*3+1] = v_traj[i].py; 
     // pts_loc[i*3+2] = v_traj[i].pz; 
-    ouf<< v_traj[i].px <<" "<<v_traj[i].py<<" "<<v_traj[i].pz<<" "<<255<<" "<<0<<" "<<0<<endl; 
+    ouf<< v_traj[i].px <<" "<<v_traj[i].py<<" "<<v_traj[i].pz<<" "<<0<<" "<<0<<" "<<0<<endl; 
   }
   ouf.flush(); 
   ouf.close(); 
