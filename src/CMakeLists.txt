@@ -33,6 +33,8 @@ target_link_libraries(mapping_bag_ply ${catkin_LIBRARIES} ${OpenCV_LIBS})
 add_executable(traj_2_ply traj_2_ply.cpp)
 target_link_libraries(traj_2_ply ${catkin_LIBRARIES} )
 
+add_executable(pcd_2_ply pcd_2_ply.cpp)
+target_link_libraries(pcd_2_ply ${PCL_LIBRARIES} ${catkin_LIBRARIES})
 
 ################## generate 3d map incrementally for recording ##############
 # add_executable(map_video map_video.cpp)
